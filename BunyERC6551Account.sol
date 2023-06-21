@@ -1,6 +1,11 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
 
-// File: contracts/IERC6551Account.sol
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+//import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 pragma solidity ^0.8.13;
 
@@ -30,20 +35,22 @@ interface IERC6551Account {
 
 // File: https://github.com/0xsequence/sstore2/blob/master/contracts/utils/Bytecode.sol
 
-
 pragma solidity ^0.8.0;
 
-
 library Bytecode {
-  error InvalidCodeAtRange(uint256 _size, uint256 _start, uint256 _end);
+    error InvalidCodeAtRange(uint256 _size, uint256 _start, uint256 _end);
 
-  /**
+    /**
     @notice Generate a creation code that results on a contract with `_code` as bytecode
     @param _code The returning value of the resulting `creationCode`
     @return creationCode (constructor) for new contract
   */
-  function creationCodeFor(bytes memory _code) internal pure returns (bytes memory) {
-    /*
+    function creationCodeFor(bytes memory _code)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        /*
       0x00    0x63         0x63XXXXXX  PUSH4 _code.length  size
       0x01    0x80         0x80        DUP1                size size
       0x02    0x60         0x600e      PUSH1 14            14 size size
@@ -54,24 +61,27 @@ library Bytecode {
       <CODE>
     */
 
-    return abi.encodePacked(
-      hex"63",
-      uint32(_code.length),
-      hex"80_60_0E_60_00_39_60_00_F3",
-      _code
-    );
-  }
+        return
+            abi.encodePacked(
+                hex"63",
+                uint32(_code.length),
+                hex"80_60_0E_60_00_39_60_00_F3",
+                _code
+            );
+    }
 
-  /**
+    /**
     @notice Returns the size of the code on a given address
     @param _addr Address that may or may not contain code
     @return size of the code on the given `_addr`
   */
-  function codeSize(address _addr) internal view returns (uint256 size) {
-    assembly { size := extcodesize(_addr) }
-  }
+    function codeSize(address _addr) internal view returns (uint256 size) {
+        assembly {
+            size := extcodesize(_addr)
+        }
+    }
 
-  /**
+    /**
     @notice Returns the code of a given address
     @dev It will fail if `_end < _start`
     @param _addr Address that may or may not contain code
@@ -81,36 +91,42 @@ library Bytecode {
 
     Forked from: https://gist.github.com/KardanovIR/fe98661df9338c842b4a30306d507fbd
   */
-  function codeAt(address _addr, uint256 _start, uint256 _end) internal view returns (bytes memory oCode) {
-    uint256 csize = codeSize(_addr);
-    if (csize == 0) return bytes("");
+    function codeAt(
+        address _addr,
+        uint256 _start,
+        uint256 _end
+    ) internal view returns (bytes memory oCode) {
+        uint256 csize = codeSize(_addr);
+        if (csize == 0) return bytes("");
 
-    if (_start > csize) return bytes("");
-    if (_end < _start) revert InvalidCodeAtRange(csize, _start, _end); 
+        if (_start > csize) return bytes("");
+        if (_end < _start) revert InvalidCodeAtRange(csize, _start, _end);
 
-    unchecked {
-      uint256 reqSize = _end - _start;
-      uint256 maxSize = csize - _start;
+        unchecked {
+            uint256 reqSize = _end - _start;
+            uint256 maxSize = csize - _start;
 
-      uint256 size = maxSize < reqSize ? maxSize : reqSize;
+            uint256 size = maxSize < reqSize ? maxSize : reqSize;
 
-      assembly {
-        // allocate output byte array - this could also be done without assembly
-        // by using o_code = new bytes(size)
-        oCode := mload(0x40)
-        // new "memory end" including padding
-        mstore(0x40, add(oCode, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-        // store length in memory
-        mstore(oCode, size)
-        // actually retrieve the code, this needs assembly
-        extcodecopy(_addr, add(oCode, 0x20), _start, size)
-      }
+            assembly {
+                // allocate output byte array - this could also be done without assembly
+                // by using o_code = new bytes(size)
+                oCode := mload(0x40)
+                // new "memory end" including padding
+                mstore(
+                    0x40,
+                    add(oCode, and(add(add(size, 0x20), 0x1f), not(0x1f)))
+                )
+                // store length in memory
+                mstore(oCode, size)
+                // actually retrieve the code, this needs assembly
+                extcodecopy(_addr, add(oCode, 0x20), _start, size)
+            }
+        }
     }
-  }
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SignedMath.sol
-
 
 // OpenZeppelin Contracts (last updated v4.8.0) (utils/math/SignedMath.sol)
 
@@ -157,7 +173,6 @@ library SignedMath {
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/Math.sol
 
-
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/math/Math.sol)
 
 pragma solidity ^0.8.19;
@@ -177,7 +192,11 @@ library Math {
      *
      * _Available since v5.0._
      */
-    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryAdd(uint256 a, uint256 b)
+        internal
+        pure
+        returns (bool, uint256)
+    {
         unchecked {
             uint256 c = a + b;
             if (c < a) return (false, 0);
@@ -190,7 +209,11 @@ library Math {
      *
      * _Available since v5.0._
      */
-    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function trySub(uint256 a, uint256 b)
+        internal
+        pure
+        returns (bool, uint256)
+    {
         unchecked {
             if (b > a) return (false, 0);
             return (true, a - b);
@@ -202,7 +225,11 @@ library Math {
      *
      * _Available since v5.0._
      */
-    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryMul(uint256 a, uint256 b)
+        internal
+        pure
+        returns (bool, uint256)
+    {
         unchecked {
             // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
             // benefit is lost if 'b' is also tested.
@@ -219,7 +246,11 @@ library Math {
      *
      * _Available since v5.0._
      */
-    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryDiv(uint256 a, uint256 b)
+        internal
+        pure
+        returns (bool, uint256)
+    {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a / b);
@@ -231,7 +262,11 @@ library Math {
      *
      * _Available since v5.0._
      */
-    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryMod(uint256 a, uint256 b)
+        internal
+        pure
+        returns (bool, uint256)
+    {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a % b);
@@ -277,7 +312,11 @@ library Math {
      * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv)
      * with further edits by Uniswap Labs also under MIT license.
      */
-    function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
         unchecked {
             // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
             // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
@@ -361,7 +400,12 @@ library Math {
     /**
      * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
      */
-    function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 denominator,
+        Rounding rounding
+    ) internal pure returns (uint256) {
         uint256 result = mulDiv(x, y, denominator);
         if (rounding == Rounding.Up && mulmod(x, y, denominator) > 0) {
             result += 1;
@@ -410,10 +454,16 @@ library Math {
     /**
      * @notice Calculates sqrt(a), following the selected rounding direction.
      */
-    function sqrt(uint256 a, Rounding rounding) internal pure returns (uint256) {
+    function sqrt(uint256 a, Rounding rounding)
+        internal
+        pure
+        returns (uint256)
+    {
         unchecked {
             uint256 result = sqrt(a);
-            return result + (rounding == Rounding.Up && result * result < a ? 1 : 0);
+            return
+                result +
+                (rounding == Rounding.Up && result * result < a ? 1 : 0);
         }
     }
 
@@ -463,10 +513,16 @@ library Math {
      * @dev Return the log in base 2, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
-    function log2(uint256 value, Rounding rounding) internal pure returns (uint256) {
+    function log2(uint256 value, Rounding rounding)
+        internal
+        pure
+        returns (uint256)
+    {
         unchecked {
             uint256 result = log2(value);
-            return result + (rounding == Rounding.Up && 1 << result < value ? 1 : 0);
+            return
+                result +
+                (rounding == Rounding.Up && 1 << result < value ? 1 : 0);
         }
     }
 
@@ -477,31 +533,31 @@ library Math {
     function log10(uint256 value) internal pure returns (uint256) {
         uint256 result = 0;
         unchecked {
-            if (value >= 10 ** 64) {
-                value /= 10 ** 64;
+            if (value >= 10**64) {
+                value /= 10**64;
                 result += 64;
             }
-            if (value >= 10 ** 32) {
-                value /= 10 ** 32;
+            if (value >= 10**32) {
+                value /= 10**32;
                 result += 32;
             }
-            if (value >= 10 ** 16) {
-                value /= 10 ** 16;
+            if (value >= 10**16) {
+                value /= 10**16;
                 result += 16;
             }
-            if (value >= 10 ** 8) {
-                value /= 10 ** 8;
+            if (value >= 10**8) {
+                value /= 10**8;
                 result += 8;
             }
-            if (value >= 10 ** 4) {
-                value /= 10 ** 4;
+            if (value >= 10**4) {
+                value /= 10**4;
                 result += 4;
             }
-            if (value >= 10 ** 2) {
-                value /= 10 ** 2;
+            if (value >= 10**2) {
+                value /= 10**2;
                 result += 2;
             }
-            if (value >= 10 ** 1) {
+            if (value >= 10**1) {
                 result += 1;
             }
         }
@@ -512,10 +568,16 @@ library Math {
      * @dev Return the log in base 10, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
-    function log10(uint256 value, Rounding rounding) internal pure returns (uint256) {
+    function log10(uint256 value, Rounding rounding)
+        internal
+        pure
+        returns (uint256)
+    {
         unchecked {
             uint256 result = log10(value);
-            return result + (rounding == Rounding.Up && 10 ** result < value ? 1 : 0);
+            return
+                result +
+                (rounding == Rounding.Up && 10**result < value ? 1 : 0);
         }
     }
 
@@ -555,22 +617,25 @@ library Math {
      * @dev Return the log in base 256, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
-    function log256(uint256 value, Rounding rounding) internal pure returns (uint256) {
+    function log256(uint256 value, Rounding rounding)
+        internal
+        pure
+        returns (uint256)
+    {
         unchecked {
             uint256 result = log256(value);
-            return result + (rounding == Rounding.Up && 1 << (result << 3) < value ? 1 : 0);
+            return
+                result +
+                (rounding == Rounding.Up && 1 << (result << 3) < value ? 1 : 0);
         }
     }
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol
 
-
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/Strings.sol)
 
 pragma solidity ^0.8.19;
-
-
 
 /**
  * @dev String operations.
@@ -608,7 +673,13 @@ library Strings {
      * @dev Converts a `int256` to its ASCII `string` decimal representation.
      */
     function toString(int256 value) internal pure returns (string memory) {
-        return string(abi.encodePacked(value < 0 ? "-" : "", toString(SignedMath.abs(value))));
+        return
+            string(
+                abi.encodePacked(
+                    value < 0 ? "-" : "",
+                    toString(SignedMath.abs(value))
+                )
+            );
     }
 
     /**
@@ -623,7 +694,11 @@ library Strings {
     /**
      * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
      */
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+    function toHexString(uint256 value, uint256 length)
+        internal
+        pure
+        returns (string memory)
+    {
         bytes memory buffer = new bytes(2 * length + 2);
         buffer[0] = "0";
         buffer[1] = "x";
@@ -645,18 +720,22 @@ library Strings {
     /**
      * @dev Returns true if the two strings are equal.
      */
-    function equal(string memory a, string memory b) internal pure returns (bool) {
-        return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
+    function equal(string memory a, string memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return
+            bytes(a).length == bytes(b).length &&
+            keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
 
-
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/cryptography/ECDSA.sol)
 
 pragma solidity ^0.8.19;
-
 
 /**
  * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
@@ -704,7 +783,11 @@ library ECDSA {
      *
      * _Available since v4.3._
      */
-    function tryRecover(bytes32 hash, bytes memory signature) internal pure returns (address, RecoverError) {
+    function tryRecover(bytes32 hash, bytes memory signature)
+        internal
+        pure
+        returns (address, RecoverError)
+    {
         if (signature.length == 65) {
             bytes32 r;
             bytes32 s;
@@ -737,7 +820,11 @@ library ECDSA {
      * this is by receiving a hash of the original message (which may otherwise
      * be too long), and then calling {toEthSignedMessageHash} on it.
      */
-    function recover(bytes32 hash, bytes memory signature) internal pure returns (address) {
+    function recover(bytes32 hash, bytes memory signature)
+        internal
+        pure
+        returns (address)
+    {
         (address recovered, RecoverError error) = tryRecover(hash, signature);
         _throwError(error);
         return recovered;
@@ -750,9 +837,16 @@ library ECDSA {
      *
      * _Available since v4.3._
      */
-    function tryRecover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address, RecoverError) {
+    function tryRecover(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 vs
+    ) internal pure returns (address, RecoverError) {
         unchecked {
-            bytes32 s = vs & bytes32(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+            bytes32 s = vs &
+                bytes32(
+                    0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+                );
             // We do not check for an overflow here since the shift operation results in 0 or 1.
             uint8 v = uint8((uint256(vs) >> 255) + 27);
             return tryRecover(hash, v, r, s);
@@ -764,7 +858,11 @@ library ECDSA {
      *
      * _Available since v4.2._
      */
-    function recover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address) {
+    function recover(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 vs
+    ) internal pure returns (address) {
         (address recovered, RecoverError error) = tryRecover(hash, r, vs);
         _throwError(error);
         return recovered;
@@ -776,7 +874,12 @@ library ECDSA {
      *
      * _Available since v4.3._
      */
-    function tryRecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address, RecoverError) {
+    function tryRecover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address, RecoverError) {
         // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
         // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
         // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}. Most
@@ -786,7 +889,10 @@ library ECDSA {
         // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
         // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
         // these malleable signatures as well.
-        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+        if (
+            uint256(s) >
+            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+        ) {
             return (address(0), RecoverError.InvalidSignatureS);
         }
 
@@ -803,7 +909,12 @@ library ECDSA {
      * @dev Overload of {ECDSA-recover} that receives the `v`,
      * `r` and `s` signature fields separately.
      */
-    function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address) {
+    function recover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address) {
         (address recovered, RecoverError error) = tryRecover(hash, v, r, s);
         _throwError(error);
         return recovered;
@@ -817,7 +928,11 @@ library ECDSA {
      *
      * See {recover}.
      */
-    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32 message) {
+    function toEthSignedMessageHash(bytes32 hash)
+        internal
+        pure
+        returns (bytes32 message)
+    {
         // 32 is the length in bytes of hash,
         // enforced by the type signature above
         /// @solidity memory-safe-assembly
@@ -836,8 +951,19 @@ library ECDSA {
      *
      * See {recover}.
      */
-    function toEthSignedMessageHash(bytes memory s) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n", Strings.toString(s.length), s));
+    function toEthSignedMessageHash(bytes memory s)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19Ethereum Signed Message:\n",
+                    Strings.toString(s.length),
+                    s
+                )
+            );
     }
 
     /**
@@ -849,7 +975,11 @@ library ECDSA {
      *
      * See {recover}.
      */
-    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 data) {
+    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash)
+        internal
+        pure
+        returns (bytes32 data)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let ptr := mload(0x40)
@@ -866,13 +996,15 @@ library ECDSA {
      *
      * See {recover}.
      */
-    function toDataWithIntendedValidatorHash(address validator, bytes memory data) internal pure returns (bytes32) {
+    function toDataWithIntendedValidatorHash(
+        address validator,
+        bytes memory data
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(hex"19_00", validator, data));
     }
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/interfaces/IERC1271.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (interfaces/IERC1271.sol)
 
@@ -890,17 +1022,17 @@ interface IERC1271 {
      * @param hash      Hash of the data to be signed
      * @param signature Signature byte array associated with _data
      */
-    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue);
+    function isValidSignature(bytes32 hash, bytes memory signature)
+        external
+        view
+        returns (bytes4 magicValue);
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/SignatureChecker.sol
 
-
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/cryptography/SignatureChecker.sol)
 
 pragma solidity ^0.8.19;
-
-
 
 /**
  * @dev Signature verification helper that can be used instead of `ECDSA.recover` to seamlessly support both ECDSA
@@ -917,8 +1049,15 @@ library SignatureChecker {
      * NOTE: Unlike ECDSA signatures, contract signatures are revocable, and the outcome of this function can thus
      * change through time. It could return true at block N and false at block N+1 (or the opposite).
      */
-    function isValidSignatureNow(address signer, bytes32 hash, bytes memory signature) internal view returns (bool) {
-        (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(hash, signature);
+    function isValidSignatureNow(
+        address signer,
+        bytes32 hash,
+        bytes memory signature
+    ) internal view returns (bool) {
+        (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(
+            hash,
+            signature
+        );
         return
             (error == ECDSA.RecoverError.NoError && recovered == signer) ||
             isValidERC1271SignatureNow(signer, hash, signature);
@@ -941,12 +1080,12 @@ library SignatureChecker {
         );
         return (success &&
             result.length >= 32 &&
-            abi.decode(result, (bytes32)) == bytes32(IERC1271.isValidSignature.selector));
+            abi.decode(result, (bytes32)) ==
+            bytes32(IERC1271.isValidSignature.selector));
     }
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/introspection/IERC165.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/introspection/IERC165.sol)
 
@@ -975,11 +1114,9 @@ interface IERC165 {
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/IERC721.sol
 
-
 // OpenZeppelin Contracts (last updated v4.9.0) (token/ERC721/IERC721.sol)
 
 pragma solidity ^0.8.19;
-
 
 /**
  * @dev Required interface of an ERC721 compliant contract.
@@ -988,17 +1125,29 @@ interface IERC721 is IERC165 {
     /**
      * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
      */
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId
+    );
 
     /**
      * @dev Emitted when `owner` enables `approved` to manage the `tokenId` token.
      */
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event Approval(
+        address indexed owner,
+        address indexed approved,
+        uint256 indexed tokenId
+    );
 
     /**
      * @dev Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.
      */
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+    event ApprovalForAll(
+        address indexed owner,
+        address indexed operator,
+        bool approved
+    );
 
     /**
      * @dev Returns the number of tokens in ``owner``'s account.
@@ -1027,7 +1176,12 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external;
 
     /**
      * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
@@ -1043,7 +1197,11 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Transfers `tokenId` token from `from` to `to`.
@@ -1061,7 +1219,11 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 tokenId) external;
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Gives permission to `to` to transfer `tokenId` token to another account.
@@ -1097,40 +1259,177 @@ interface IERC721 is IERC165 {
      *
      * - `tokenId` must exist.
      */
-    function getApproved(uint256 tokenId) external view returns (address operator);
+    function getApproved(uint256 tokenId)
+        external
+        view
+        returns (address operator);
 
     /**
      * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
      *
      * See {setApprovalForAll}
      */
-    function isApprovedForAll(address owner, address operator) external view returns (bool);
+    function isApprovedForAll(address owner, address operator)
+        external
+        view
+        returns (bool);
 }
 
 // File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/interfaces/IERC165.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (interfaces/IERC165.sol)
 
 pragma solidity ^0.8.19;
 
-
 // File: contracts/ERC6551Account.sol
-
 
 pragma solidity ^0.8.13;
 
+interface ERC20 {
+    function balanceOf(address account) external view returns (uint256);
 
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+}
 
-
-
-
-
+interface CalendarStandalone {
+    function createTelosCalendarEvent(string memory title, uint256 startTime, uint256 endTime) external;
+}
 
 contract BunyERC6551Account is IERC165, IERC1271, IERC6551Account {
+    
     uint256 private _nonce;
+    string public accountName = "IBUNY ERC6551 Token Owned Account";
+    uint256 public depositCount = 0;
+    mapping(uint256 => Deposit) public deposits;
+    mapping(address => uint256) tokenBalances;
+    mapping(address => PrivateCalendarEvent[]) public userPrivateEvents;
+    mapping(address => PublicCalendarEvent[]) public userPublicEvents;
+    address public calendarAddress = 0x37F8Bb1B8798CEFAbDb7f8BbDE61A168705404D4;
+    
+    
+    event NewPrivateEventCreated(string title, address indexed attendee, uint startTime, uint endTime, uint timestamp);
+    event NewPublicEventCreated(string title, address indexed attendee, uint startTime, uint endTime, address indexed calendarAddress, uint timestamp);
+    event NewDeposit(address indexed depositor, uint256 amount, uint timestamp);
+    event NewERC20Deposit(address indexed depositor, address indexed tokenAddress, uint256 amount, uint timestamp);
+    event WithdrawEvent(uint256 amount, address indexed recipient, uint timestamp);
 
-    receive() external payable {}
+    struct PrivateCalendarEvent {
+        string title;
+        address attendee;
+        uint startTime;
+        uint endTime;
+    }
+
+    struct PublicCalendarEvent {
+        string title;
+        address attendee;
+        uint startTime;
+        uint endTime;
+        address calendar;
+    }
+
+    struct Deposit {
+        address depositor;
+        address tokenAddress;
+        uint256 amount;
+        uint256 timestamp;
+    }   
+
+       receive() external payable {}
+
+// set custom name for account
+    function setAccountName(string memory newName) public {
+        require(msg.sender == owner(), "Only the contract owner can set the contract name");
+        accountName = newName;
+    }
+
+// change default calendar contract address
+    function setCalendarAddress(address _contractAddress) public {
+        require(msg.sender == owner(), "Only owner can create calendar events ");
+        calendarAddress = _contractAddress;
+    }
+
+// private calendar events are saved on this contract
+    function createPrivateCalendarEvent(string memory title, uint startTime, uint endTime) public {
+        require(msg.sender == owner(), "Only owner can create calendar events ");
+        PrivateCalendarEvent memory privateCalendarEvent;
+        privateCalendarEvent.title = title;
+        privateCalendarEvent.startTime = startTime;
+        privateCalendarEvent.endTime = endTime;
+        privateCalendarEvent.attendee = address(this);
+        userPrivateEvents[address(this)].push(privateCalendarEvent);
+        emit NewPrivateEventCreated(title, address(this), startTime, endTime, block.timestamp);
+    }
+
+// private calendar events saved on contract
+    function getUserPrivateEvents(address user) public view returns (PrivateCalendarEvent[] memory) {
+        require(msg.sender == owner(), "Only the contract owner can fetch private events");
+        return userPrivateEvents[user];
+    }
+
+// public events saved on remote contract
+    function getUserPublicEvents(address user) public view returns (PublicCalendarEvent[] memory) {
+        return userPublicEvents[user];
+    }
+
+    function createTelosCalendarEvent(string memory title, uint256 startTime, uint256 endTime) public {
+        CalendarStandalone calendarContract = CalendarStandalone(calendarAddress);
+        PublicCalendarEvent memory publicCalendarEvent;
+        publicCalendarEvent.title = title;
+        publicCalendarEvent.startTime = startTime;
+        publicCalendarEvent.endTime = endTime;
+        publicCalendarEvent.attendee = address(this);
+        publicCalendarEvent.calendar = calendarAddress;
+        calendarContract.createTelosCalendarEvent(title, startTime, endTime);
+        userPublicEvents[address(this)].push(publicCalendarEvent);
+        emit NewPublicEventCreated(title, address(this), startTime, endTime, calendarAddress, block.timestamp);
+    }
+
+
+// receive native chain erc20 tokens ie. TLOS
+    function deposit() public payable {
+        require(msg.value > 0, "Deposit amount must be greater than 0.");
+            depositCount++; 
+            deposits[depositCount] = Deposit({
+            depositor: msg.sender, // address of depositor
+            tokenAddress: address(0),  // native chain token. TLOS
+            amount: msg.value, // amount to deposit
+            timestamp: block.timestamp // timestamp of deposit
+        });
+        emit NewDeposit(msg.sender, msg.value, block.timestamp);
+    }
+
+// function for depositing any erc20 token. 
+    function receiveERC20(address _erc20Token, uint256 amount) public payable {
+        tokenBalances[_erc20Token] += amount;
+        depositCount++;
+        deposits[depositCount] = Deposit({
+            depositor: msg.sender,
+            tokenAddress: _erc20Token,
+            amount: amount,
+            timestamp: block.timestamp
+        });
+        emit NewERC20Deposit(msg.sender, _erc20Token, msg.value, block.timestamp);
+    }
+
+// fetch contract tlos balance
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+
+// get specific erc20 balance
+    function getTokenBalance(address _erc20Token)
+        public
+        view
+        returns (uint256)
+    {
+        return ERC20(_erc20Token).balanceOf(address(this));
+    }
 
     function executeCall(
         address to,
@@ -1138,18 +1437,29 @@ contract BunyERC6551Account is IERC165, IERC1271, IERC6551Account {
         bytes calldata data
     ) public payable returns (bytes memory result) {
         require(msg.sender == owner(), "Not token owner");
-
         bool success;
         (success, result) = to.call{value: value}(data);
-
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
             }
         }
-
         _nonce += 1;
     }
+
+    function withdraw(uint256 amount) public {
+        require(msg.sender == owner(), "Only the owner can withdraw funds.");
+        require(amount <= address(this).balance, "Insufficient balance.");
+        payable(msg.sender).transfer(amount);
+        emit WithdrawEvent(amount, msg.sender, block.timestamp);
+    }
+
+    function withdrawTo(address payable recipient, uint256 amount) public {
+        require(msg.sender == owner(), "Only the owner can withdraw funds.");
+        require(amount <= address(this).balance, "Insufficient balance.");
+        recipient.transfer(amount);
+    }
+
 
     function token()
         external
