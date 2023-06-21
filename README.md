@@ -1,4 +1,4 @@
-# ERC6551
+# ERC6551 
 ERC6551 NFT Wallet SmartContracts
 
 - On-chain identity
@@ -8,39 +8,40 @@ ERC6551 NFT Wallet SmartContracts
 - NFT can interact with the blockchain, record transaction history, and own on-chain assets.
 - Token bound accounts can own any type of on-chain asset, and can be extended to support new asset types created in the future.
 
-# BunyERC6551Registry
-
-
-
-# BunyERC6551Account
-## NFT bound account implementation
-
-The BunyERC6551Account contract implements the interfaces IERC165,
-IERC1271, and IERC6551Account that interacts with ERC20, ERC721 tokens,
-verifies digital signatures, and supports interface detection.
-
-The contract is designed to manage a "token owned account" (a user
-account that holds tokens). This account is given a name.
+# ERC6551 NFT Owned Account
+## NFT bound Registry & Implementation. 
 
 [![N|Solid](https://buny.cloud/android-chrome-192x192.png)](https://buny.cloud)
 ## The Buny Project
 https://buny.cloud
 
-The BunyERC6551Account contract is designed to manage a "token owned account" (a user account that holds tokens). This contract is used as a template implementation by the BunyERC6551Registry contract. 
+SmartContracts designed to manage a "token owned account" a user account that holds tokens and is owned by a NFT token instead of a wallet address. 
 
-## Features
+## BunyERC6551Registry 
+Factory contract, used to deploy instances of the BunyERC6551Account contract. Account contracts are tracked by the factory, and can be queried through the accounts mapping.
 
-- Onchain NFT wallet owned by NFT Token
-- contract assets transfer with token
-- multi-chain nft binding support
-- receive deposits of any erc20 token
-- erc20 token balance array
-- Withdraw erc20 tokens
-- Assign a custom name
-- Create calendar events
+## BunyERC6551Account 
+This contract implements the interfaces IERC165, IERC1271, and IERC6551Account that interacts with ERC20, ERC721 tokens, verifies digital signatures, and supports interface detection.
 
-## Mappings
 
+## Registry Mappings
+| Name | Type | Description |
+| --- | --- | --- |
+| `accountCounter` | `uint256` | A public variable that counts the number of accounts created. It is initialized as 0. |
+| `accounts` | `mapping(address => IBunyAccount)` | A public mapping that associates Ethereum addresses with `IBunyAccount` structs. |
+| `calendarAddress` | `address` | A public variable that holds the address of the calendar contract. It is initialized with a hardcoded address value. |
+| `IBunyAccount` | `struct` | A struct that represents an account. It contains the fields `implementation` (address), `chainId` (uint256), `tokenContract` (address), `tokenId` (uint256), `salt` (uint256), and `calendarAddress` (address). |
+
+## Registry Functions
+| Function Name | Description |
+| --- | --- |
+| `createAccount(address implementation, uint256 chainId, address tokenContract, uint256 tokenId, uint256 salt, bytes calldata initData)` | Creates a new account using the Create2 Ethereum feature. The function receives an implementation address, a chain ID, a token contract address, a token ID, a salt for the Create2 function, and initialization data as arguments. It computes the address of the new account based on the salt and the creation code. If the account already exists, it returns its address. If the account does not exist, it deploys the new account using Create2, calls the initialization data (if any), increments the account counter, registers the new account in the `accounts` mapping, and emits an `AccountCreated` event. |
+| `account(address implementation, uint256 chainId, address tokenContract, uint256 tokenId, uint256 salt)` | A view function that computes the address of an account based on the given parameters, just like in the `createAccount` function, but without deploying a new account. It computes the hash of the creation code and the address based on the salt and the bytecode hash. |
+| `_creationCode(address implementation_, uint256 chainId_, address tokenContract_, uint256 tokenId_, uint256 salt_)` | An internal pure function that encodes the creation code used in the `createAccount` and `account` functions. It packs the implementation address, a hardcoded value, and an encoded version of the salt, chain ID, token contract address, and token ID. |
+
+# BunyERC6551Account
+
+## Account Mappings
 | Variable Name | Description |
 | --- | --- |
 | `deposits` | Stores information about deposits, indexed by a numerical ID. The deposit details are stored in the `Deposit` struct which includes the depositor's address, the token's address, the deposit amount, and the timestamp of the deposit. |
@@ -49,7 +50,7 @@ The BunyERC6551Account contract is designed to manage a "token owned account" (a
 | `calendarAddress` | Stores the address of a calendar contract. |
 
 
-## Events
+## Account Events
 | Event Name | Description |
 | --- | --- |
 | `NewEventCreated` | Stores information about a newly created event. Includes the event title, the organizer's address, start and end times, a URI to additional metadata, and the timestamp of the event creation. |
@@ -58,9 +59,7 @@ The BunyERC6551Account contract is designed to manage a "token owned account" (a
 | `InvitationAccepted` | Stores information about an invitation being accepted by an attendee. Includes the event ID and the address of the attendee who accepted the invitation. |
 
 
-
-## Functions
-
+## Account Functions
 | Function | Description |
 | ------ | ------ |
 | `receive()` | external and payable, allowing the contract to accept TLOS directly (without any function being called) by sending a transaction to the contract's address. |
@@ -87,6 +86,7 @@ The BunyERC6551Account contract is designed to manage a "token owned account" (a
 ## License
 
 // SPDX-License-Identifier: MIT
+
 
 
 
