@@ -7,15 +7,17 @@ ERC6551 NFT Wallet SmartContracts
 - Each token bound account is owned by a single ERC-721 token
 - NFT can interact with the blockchain, record transaction history, and own on-chain assets.
 - Token bound accounts can own any type of on-chain asset, and can be extended to support new asset types created in the future.
+
+
+# BunyERC6551Account.sol
+## NFT bound account implementation
+
 The BunyERC6551Account contract implements the interfaces IERC165,
 IERC1271, and IERC6551Account that interacts with ERC20, ERC721 tokens,
 verifies digital signatures, and supports interface detection.
 
 The contract is designed to manage a "token owned account" (a user
 account that holds tokens). This account is given a name.
-
-# BunyERC6551Account.sol
-## NFT bound account implementation
 
 [![N|Solid](https://buny.cloud/android-chrome-192x192.png)](https://buny.cloud)
 ## The Buny Project
